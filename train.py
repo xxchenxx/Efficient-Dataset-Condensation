@@ -148,8 +148,8 @@ def train(args, model, train_loader, val_loader, plotter=None, logger=None):
             if is_best:
                 best_acc1 = acc1
                 best_acc5 = acc5
-                if logger != None:
-                    logger(f'Best accuracy (top-1 and 5): {best_acc1:.1f} {best_acc5:.1f}')
+                # if logger != None:
+                #     logger(f'Best accuracy (top-1 and 5): {best_acc1:.1f} {best_acc5:.1f}')
 
         if args.save_ckpt and (is_best or (epoch == args.epochs)):
             state = {
@@ -165,6 +165,47 @@ def train(args, model, train_loader, val_loader, plotter=None, logger=None):
 
     return best_acc1, acc1
 
+def train_only(args, model, train_loader, return_weights=False, logger=None):
+    criterion = nn.CrossEntropyLoss().cuda()
+    optimizer = optim.SGD(model.parameters(),
+                          args.lr,
+                          momentum=args.momentum,
+                          weight_decay=args.weight_decay)
+
+    scheduler = optim.lr_scheduler.MultiStepLR(
+        optimizer, milestones=[2 * args.epochs // 3, 5 * args.epochs // 6], gamma=0.2)
+
+    # Load pretrained
+    cur_epoch, best_acc1, best_acc5, acc1, acc5 = 0, 0, 0, 0, 0
+    if args.pretrained:
+        pretrained = "{}/{}".format(args.save_dir, 'checkpoint.pth.tar')
+        cur_epoch, best_acc1 = load_checkpoint(pretrained, model, optimizer)
+        # TODO: optimizer scheduler steps
+
+    # model = torch.nn.DataParallel(model).cuda()
+    model = model.cuda()
+    if args.dsa:
+        aug = DiffAug(strategy=args.dsa_strategy, batch=False)
+        logger(f"Start training with DSA and {args.mixup} mixup")
+    else:
+        aug = None
+        logger(f"Start training with base augmentation and {args.mixup} mixup")
+
+    # Start training and validation
+    # print(get_time())
+    for epoch in range(cur_epoch + 1, args.epochs + 1):
+        train_epoch(args,
+                    train_loader,
+                    model,
+                    criterion,
+                    optimizer,
+                    epoch,
+                    logger,
+                    aug,
+                    mixup=args.mixup)
+        scheduler.step()
+
+    return best_acc1, acc1, model.state_dict()
 
 def train_epoch(args,
                 train_loader,
@@ -251,10 +292,10 @@ def train_epoch(args,
         if (n_data > 0) and (num_exp >= n_data):
             break
 
-    if (epoch % args.epoch_print_freq == 0) and (logger is not None):
-        logger(
-            '(Train) [Epoch {0}/{1}] {2} Top1 {top1.avg:.1f}  Top5 {top5.avg:.1f}  Loss {loss.avg:.3f}'
-            .format(epoch, args.epochs, get_time(), top1=top1, top5=top5, loss=losses))
+    # if (epoch % args.epoch_print_freq == 0) and (logger is not None):
+    #     logger(
+    #         '(Train) [Epoch {0}/{1}] {2} Top1 {top1.avg:.1f}  Top5 {top5.avg:.1f}  Loss {loss.avg:.3f}'
+    #         .format(epoch, args.epochs, get_time(), top1=top1, top5=top5, loss=losses))
 
     return top1.avg, top5.avg, losses.avg
 

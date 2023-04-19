@@ -30,7 +30,7 @@ def return_data_path(args):
         name = args.name
         if name == '':
             if args.dataset == 'cifar10':
-                name = f'cifar10/conv3in_grad_mse_nd2000_cut_niter2000_factor{args.factor}_lr0.005_{init}'
+                name = f'cifar10/conv3in_hard_20_grad_mse_nd2000_cut_niter2000_factor{args.factor}_lr0.005_{init}'
 
             elif args.dataset == 'cifar100':
                 name = f'cifar100/conv3in_grad_mse_nd2000_cut_niter2000_factor{args.factor}_lr0.005_{init}'
@@ -209,7 +209,7 @@ def load_data_path(args):
     """
     if args.pretrained:
         args.augment = False
-
+    args.data_dir = './data'
     print()
     if args.dataset == 'imagenet':
         traindir = os.path.join(args.imagenet_dir, 'train')
@@ -334,23 +334,23 @@ def load_data_path(args):
         if args.dataset == 'cifar10':
             val_dataset = torchvision.datasets.CIFAR10(args.data_dir,
                                                        train=False,
-                                                       transform=test_transform)
+                                                       transform=test_transform, download=True)
         elif args.dataset == 'cifar100':
             val_dataset = torchvision.datasets.CIFAR100(args.data_dir,
                                                         train=False,
-                                                        transform=test_transform)
+                                                        transform=test_transform, download=True)
         elif args.dataset == 'svhn':
             val_dataset = torchvision.datasets.SVHN(os.path.join(args.data_dir, 'svhn'),
                                                     split='test',
-                                                    transform=test_transform)
+                                                    transform=test_transform, download=True)
         elif args.dataset == 'mnist':
             val_dataset = torchvision.datasets.MNIST(args.data_dir,
                                                      train=False,
-                                                     transform=test_transform)
+                                                     transform=test_transform, download=True)
         elif args.dataset == 'fashion':
             val_dataset = torchvision.datasets.FashionMNIST(args.data_dir,
                                                             train=False,
-                                                            transform=test_transform)
+                                                            transform=test_transform, download=True)
 
     # For sanity check
     print("Training data shape: ", train_dataset[0][0].shape)
@@ -382,7 +382,7 @@ def test_data(args,
             model_fn_ls = [resnet10_bn]
     else:
         model_fn_ls = [model_fn]
-
+    
     for model_fn in model_fn_ls:
         best_acc_l = []
         acc_l = []
@@ -391,6 +391,43 @@ def test_data(args,
             best_acc, acc = train(args, model, train_loader, val_loader, logger=print)
             best_acc_l.append(best_acc)
             acc_l.append(acc)
+            torch.save(model.state_dict(), f'model_{_}.pth.tar')
+        logger(
+            f'Repeat {repeat} => Best, last acc: {np.mean(best_acc_l):.1f} {np.mean(acc_l):.1f}\n')
+
+
+def test_data_with_previous(args,
+              train_loader,
+              val_loader,
+              previous_val_loaders,
+              test_resnet=False,
+              model_fn=None,
+              repeat=1,
+              logger=print,
+              num_val=4):
+    """Train neural networks on condensed data
+    """
+
+    args.epoch_print_freq = args.epochs // num_val
+
+    if model_fn is None:
+        model_fn_ls = [define_model]
+        if test_resnet:
+            model_fn_ls = [resnet10_bn]
+    else:
+        model_fn_ls = [model_fn]
+    
+    for model_fn in model_fn_ls:
+        best_acc_l = []
+        acc_l = []
+        for _ in range(repeat):
+            model = model_fn(args, args.nclass, logger=logger)
+            for previous_val_loader in previous_val_loaders:
+                best_acc, acc = train(args, model, train_loader, previous_val_loader, logger=print)
+            best_acc, acc = train(args, model, train_loader, val_loader, logger=print)
+            best_acc_l.append(best_acc)
+            acc_l.append(acc)
+            torch.save(model.state_dict(), f'model_{_}.pth.tar')
         logger(
             f'Repeat {repeat} => Best, last acc: {np.mean(best_acc_l):.1f} {np.mean(acc_l):.1f}\n')
 
@@ -423,7 +460,8 @@ if __name__ == '__main__':
                                            persistent_workers=True,
                                            num_workers=4)
 
-        test_data(args, train_loader, val_loader, repeat=args.repeat, test_resnet=False)
+        test_data(args, train_loader, val_loader, repeat=args.repeat, test_resnet=False, num_val=50)
+        assert False
         if args.dataset[:5] == 'cifar':
             test_data(args, train_loader, val_loader, repeat=args.repeat, model_fn=resnet10_bn)
             if (not args.same_compute) and (args.ipc >= 50 and args.factor > 1):

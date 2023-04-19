@@ -15,6 +15,7 @@ from misc.augment import DiffAug
 from misc import utils
 from math import ceil
 import glob
+import pickle
 
 
 class Synthesizer():
@@ -220,7 +221,7 @@ class Synthesizer():
 
         data_dec = torch.cat(data_dec)
         target_dec = torch.cat(target_dec)
-
+        
         train_dataset = TensorDataset(data_dec.cpu(), target_dec.cpu(), train_transform)
 
         print("Decode condensed data: ", data_dec.shape)
@@ -246,7 +247,7 @@ def load_resized_data(args):
     """Load original training data (fixed spatial size and without augmentation) for condensation
     """
     if args.dataset == 'cifar10':
-        train_dataset = datasets.CIFAR10(args.data_dir, train=True, transform=transforms.ToTensor())
+        train_dataset = datasets.CIFAR10(args.data_dir, train=True, transform=transforms.ToTensor(), download=True)
         normalize = transforms.Normalize(mean=MEANS['cifar10'], std=STDS['cifar10'])
         transform_test = transforms.Compose([transforms.ToTensor(), normalize])
         val_dataset = datasets.CIFAR10(args.data_dir, train=False, transform=transform_test)
@@ -454,6 +455,25 @@ def condense(args, logger, device='cuda'):
     print(args)
 
     trainset, val_loader = load_resized_data(args)
+
+    images = []
+    labels = []
+    forgettings = pickle.load(open("cifar10_sorted_convnet.pkl", "rb"))
+    indices = forgettings['indices']    
+    forgetting = forgettings['forgetting counts']    
+    sorted_forgetting = forgetting[indices]
+    for idx, (data, label) in enumerate(trainset):
+        if sorted_forgetting[idx] > 20:
+            images.append(data)
+            labels.append(label)
+    images = torch.stack(images)
+    labels = torch.Tensor(labels).reshape(-1)
+    print(images.shape)
+
+    trainset = torch.utils.data.TensorDataset(images, labels)
+    trainset.targets = labels
+    trainset.data = images
+    trainset.nclass = args.nclass
     if args.load_memory:
         loader_real = ClassMemDataLoader(trainset, batch_size=args.batch_real)
     else:
