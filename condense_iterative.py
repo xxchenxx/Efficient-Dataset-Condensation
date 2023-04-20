@@ -459,7 +459,6 @@ def condense(args, logger, device='cuda'):
     """Optimize condensed data
     """
     # Define real dataset and loader
-    args.niter = 500
     args.num_intervals = 5
     print(args)
     trainset, val_loader = load_resized_data(args)
