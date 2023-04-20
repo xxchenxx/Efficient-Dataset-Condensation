@@ -399,7 +399,7 @@ def test_data(args,
 def test_data_with_previous(args,
               train_loader,
               val_loader,
-              previous_val_loaders,
+              previous_train_loaders,
               test_resnet=False,
               model_fn=None,
               repeat=1,
@@ -422,8 +422,8 @@ def test_data_with_previous(args,
         acc_l = []
         for _ in range(repeat):
             model = model_fn(args, args.nclass, logger=logger)
-            for previous_val_loader in previous_val_loaders:
-                best_acc, acc = train(args, model, train_loader, previous_val_loader, logger=print)
+            for previous_train_loader in previous_train_loaders:
+                best_acc, acc = train(args, model, previous_train_loader, val_loader, logger=print)
             best_acc, acc = train(args, model, train_loader, val_loader, logger=print)
             best_acc_l.append(best_acc)
             acc_l.append(acc)
