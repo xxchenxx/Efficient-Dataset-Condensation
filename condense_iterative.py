@@ -241,14 +241,14 @@ class Synthesizer():
         if bench and not (args.dataset in ['mnist', 'fashion']):
             test_data(args, loader, val_loader, test_resnet=True, logger=logger)
 
-    def test_with_previous(self, args, val_loader, previous_val_loaders, logger, bench=True):
+    def test_with_previous(self, args, val_loader, previous_train_loaders, logger, bench=True):
         """Condensed data evaluation
         """
         loader = self.loader(args, args.augment)
-        test_data_with_previous(args, loader, val_loader, previous_val_loaders, test_resnet=False, logger=logger)
+        test_data_with_previous(args, loader, val_loader, previous_train_loaders, test_resnet=False, logger=logger)
 
         if bench and not (args.dataset in ['mnist', 'fashion']):
-            test_data_with_previous(args, loader, val_loader, previous_val_loaders, test_resnet=True, logger=logger)
+            test_data_with_previous(args, loader, val_loader, previous_train_loaders, test_resnet=True, logger=logger)
 
 
 def load_resized_data(args):
@@ -475,7 +475,7 @@ def condense(args, logger, device='cuda'):
     nclass = trainset.nclass
     nch, hs, ws = trainset[0][0].shape
 
-    for interval_idx in range(args.num_intervals):
+    for interval_idx in range(args.start_interval, args.num_intervals):
         # Define syn dataset
         print("=" * 20)
         print(f"Begin interval: {interval_idx}")
