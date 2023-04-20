@@ -459,7 +459,7 @@ def condense(args, logger, device='cuda'):
     """Optimize condensed data
     """
     # Define real dataset and loader
-
+    args.niter = 500
     args.num_intervals = 5
     print(args)
     trainset, val_loader = load_resized_data(args)
@@ -480,6 +480,13 @@ def condense(args, logger, device='cuda'):
         print("=" * 20)
         print(f"Begin interval: {interval_idx}")
         print("=" * 20)
+        torch.manual_seed(interval_idx)
+        loader_real = ClassDataLoader(trainset,
+                                      batch_size=args.batch_real,
+                                      num_workers=args.workers,
+                                      shuffle=True,
+                                      pin_memory=True,
+                                      drop_last=True)
         synset = Synthesizer(args, nclass, nch, hs, ws)
         synset.init(loader_real, init_type=args.init)
         save_img(os.path.join(args.save_dir, f'interval_{interval_idx}_init.png'),

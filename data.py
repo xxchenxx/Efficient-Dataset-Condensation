@@ -7,6 +7,7 @@ import os
 import numpy as np
 import warnings
 from misc import utils
+import random
 
 warnings.filterwarnings("ignore")
 
@@ -402,15 +403,19 @@ class ClassDataLoader(MultiEpochsDataLoader):
         for i in range(len(self.dataset)):
             self.cls_idx[self.dataset.targets[i]].append(i)
         self.class_sampler = ClassBatchSampler(self.cls_idx, self.batch_size, drop_last=True)
-
+        self.shuffle = kwargs.get('shuffle', True)
         self.cls_targets = torch.tensor([np.ones(self.batch_size) * c for c in range(self.nclass)],
                                         dtype=torch.long,
                                         requires_grad=False,
                                         device='cuda')
 
     def class_sample(self, c, ipc=-1):
+        
         if ipc > 0:
-            indices = self.cls_idx[c][:ipc]
+            if self.shuffle:
+                indices = random.sample(self.cls_idx[c], ipc)
+            else:
+                indices = self.cls_idx[c][:ipc]
         else:
             indices = next(self.class_sampler.samplers[c])
 
