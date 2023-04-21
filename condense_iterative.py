@@ -501,8 +501,7 @@ def condense(args, logger, device='cuda'):
                 unnormalize=True,
                 dataname=args.dataset)
 
-        if not args.test:
-            synset.test(args, val_loader, logger, bench=False)
+        
         prev_loaders = []
         if interval_idx >= 1:
             for i in range(interval_idx):
@@ -514,6 +513,9 @@ def condense(args, logger, device='cuda'):
                     synset_old.targets.copy_(prev_targets)
                 prev_loader = synset_old.loader(args, args.augment)
                 prev_loaders.append(prev_loader)
+        
+        if not args.test:
+            synset.test_with_previous(args, val_loader, prev_loaders, logger, bench=False)
 
         # Data distillation
         optim_img = torch.optim.SGD(synset.parameters(), lr=args.lr_img, momentum=args.mom_img)
