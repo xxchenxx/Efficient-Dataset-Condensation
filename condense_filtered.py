@@ -467,11 +467,11 @@ def condense(args, logger, device='cuda'):
             images.append(data)
             labels.append(label)
     images = torch.stack(images)
-    labels = torch.Tensor(labels).reshape(-1)
+    labels = torch.Tensor(labels).reshape(-1).long()
     print(images.shape)
 
     trainset = torch.utils.data.TensorDataset(images, labels)
-    trainset.targets = labels
+    trainset.targets = labels.long()
     trainset.data = images
     trainset.nclass = args.nclass
     if args.load_memory:

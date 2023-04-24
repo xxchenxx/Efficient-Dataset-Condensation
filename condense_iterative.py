@@ -15,6 +15,7 @@ from misc.augment import DiffAug
 from misc import utils
 from math import ceil
 import glob
+import pickle
 
 
 class Synthesizer():
@@ -459,7 +460,6 @@ def condense(args, logger, device='cuda'):
     """Optimize condensed data
     """
     # Define real dataset and loader
-    args.num_intervals = 5
     print(args)
     trainset, val_loader = load_resized_data(args)
     if args.load_memory:
@@ -479,6 +479,30 @@ def condense(args, logger, device='cuda'):
         print("=" * 20)
         print(f"Begin interval: {interval_idx}")
         print("=" * 20)
+        images = []
+        labels = []
+        if args.filter_easy_to_hard:
+            trainset, val_loader = load_resized_data(args)
+
+            forgettings = pickle.load(open("cifar10_sorted_convnet.pkl", "rb"))
+            indices = forgettings['indices']    
+            forgetting = forgettings['forgetting counts']    
+            sorted_forgetting = forgetting[indices]
+            lower = interval_idx * 3
+            upper = (interval_idx + 1) * 3 if interval_idx != args.num_intervals - 1 else 201
+            for idx, (data, label) in enumerate(trainset):
+                
+                if (sorted_forgetting[idx] >= lower) and (sorted_forgetting[idx] < upper):
+                    images.append(data)
+                    labels.append(label)
+            images = torch.stack(images)
+            labels = torch.from_numpy(np.array(labels, dtype=int)).reshape(-1)
+            print(images.shape)
+
+            trainset = torch.utils.data.TensorDataset(images, labels)
+            trainset.targets = labels
+            trainset.data = images
+            trainset.nclass = args.nclass
         torch.manual_seed(interval_idx)
         loader_real = ClassDataLoader(trainset,
                                       batch_size=args.batch_real,

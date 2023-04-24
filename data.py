@@ -401,6 +401,7 @@ class ClassDataLoader(MultiEpochsDataLoader):
         self.nclass = self.dataset.nclass
         self.cls_idx = [[] for _ in range(self.nclass)]
         for i in range(len(self.dataset)):
+            # print(self.dataset.targets[i])
             self.cls_idx[self.dataset.targets[i]].append(i)
         self.class_sampler = ClassBatchSampler(self.cls_idx, self.batch_size, drop_last=True)
         self.shuffle = kwargs.get('shuffle', True)
