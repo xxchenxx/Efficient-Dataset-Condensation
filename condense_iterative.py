@@ -488,8 +488,8 @@ def condense(args, logger, device='cuda'):
             indices = forgettings['indices']    
             forgetting = forgettings['forgetting counts']    
             sorted_forgetting = forgetting[indices]
-            lower = interval_idx * args.diffulty_interval
-            upper = (interval_idx + 1) * args.diffulty_interval if interval_idx != args.num_intervals - 1 else 201
+            lower = interval_idx * args.difficulty_interval
+            upper = (interval_idx + 1) * args.difficulty_interval if interval_idx != args.num_intervals - 1 else 201
             for idx, (data, label) in enumerate(trainset):
                 
                 if (sorted_forgetting[idx] >= lower) and (sorted_forgetting[idx] < upper):
