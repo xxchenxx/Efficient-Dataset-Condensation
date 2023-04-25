@@ -614,9 +614,11 @@ def test_data_with_previous(args,
             acc_l.append(acc)
             torch.save(model.state_dict(), f'model_interval_{interval_idx}_repeat{_}.pth.tar')
             best_accs_repeat.append(best_accs)
+            logger(
+            f'Repeat {repeat} => Best, last acc: {np.round(best_accs, 4)}\n')
         best_accs_repeat = np.stack(best_accs_repeat)
         logger(
-            f'Repeat {repeat} => Best, last acc: {np.round(np.mean(best_accs_repeat, 0), 4)} {np.mean(acc_l):.1f}\n')
+            f' => Best, last acc: {np.round(np.mean(best_accs_repeat, 0), 4)} {np.mean(acc_l):.1f}\n')
 
 
 if __name__ == '__main__':
