@@ -597,8 +597,9 @@ def test_data_with_previous(args,
         best_acc_l = []
         acc_l = []
         best_accs_repeat = []
-        interval_idx = 0
+        
         for _ in range(repeat):
+            interval_idx = 0
             best_accs = []
             model = model_fn(args, args.nclass, logger=logger)
             for previous_train_loader in previous_train_loaders:
