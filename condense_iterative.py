@@ -538,7 +538,7 @@ def condense(args, logger, device='cuda'):
                 prev_loader = synset_old.loader(args, args.augment)
                 prev_loaders.append(prev_loader)
         
-            if args.filter_correct_samples:
+            if args.filter_correct_samples or args.filter_correct_samples_both:
                 correct = torch.zeros(len(trainset)).cuda()
                 for idx in range(10):
                     model = define_model(args, nclass).to(device)
@@ -564,7 +564,10 @@ def condense(args, logger, device='cuda'):
                 correct = correct.cpu().numpy()
                 
                 for idx, (data, label) in enumerate(trainset):
-                    if correct[idx] == 10:
+                    if (correct[idx] < 10) and (0 < correct[idx]):
+                        images.append(data)
+                        labels.append(label)
+                    elif (not args.filter_correct_samples_both) and (0 == correct[idx]):
                         images.append(data)
                         labels.append(label)
                 images = torch.stack(images)
