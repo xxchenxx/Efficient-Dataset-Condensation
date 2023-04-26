@@ -252,6 +252,7 @@ parser.add_argument('--name', type=str, default='', help='name of the test data 
 parser.add_argument('--start-interval', type=int, default=0)
 parser.add_argument('--difficulty-interval', type=int, default=0)
 parser.add_argument('--filter-easy-to-hard', action='store_true')
+parser.add_argument('--filter-correct-samples', action='store_true')
 parser.set_defaults(bottleneck=True)
 parser.set_defaults(verbose=False)
 args = parser.parse_args()

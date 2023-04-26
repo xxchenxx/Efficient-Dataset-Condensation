@@ -503,6 +503,7 @@ def condense(args, logger, device='cuda'):
             trainset.targets = labels
             trainset.data = images
             trainset.nclass = args.nclass
+        
         torch.manual_seed(interval_idx)
         loader_real = ClassDataLoader(trainset,
                                       batch_size=args.batch_real,
@@ -537,6 +538,44 @@ def condense(args, logger, device='cuda'):
                 prev_loader = synset_old.loader(args, args.augment)
                 prev_loaders.append(prev_loader)
         
+            if args.filter_correct_samples:
+                correct = torch.zeros(len(trainset)).cuda()
+                for idx in range(10):
+                    model = define_model(args, nclass).to(device)
+                    model.train()
+                    for i in range(interval_idx):
+                        prev_loader = prev_loaders[i]
+                        best_acc1, acc1, return_weights = train_only(args, model, prev_loader, True, logger=logger)
+                        model.load_state_dict(return_weights)
+                    loader_acc_evaluate = ClassDataLoader(trainset,
+                                    batch_size=args.batch_real,
+                                    num_workers=args.workers,
+                                    pin_memory=True)
+                    cur = 0
+                    for data, label in loader_acc_evaluate:
+                        data = data.cuda()
+                        label = label.cuda()
+                        output = model(data)
+                        output = torch.argmax(output, 1)
+                        correct_batch = output == label
+                        correct[cur:cur + output.shape[0]] += correct_batch
+                        cur += output.shape[0]
+                
+                correct = correct.cpu().numpy()
+                
+                for idx, (data, label) in enumerate(trainset):
+                    if correct[idx] == 10:
+                        images.append(data)
+                        labels.append(label)
+                images = torch.stack(images)
+                labels = torch.from_numpy(np.array(labels, dtype=int)).reshape(-1)
+                print(images.shape)
+
+                trainset = torch.utils.data.TensorDataset(images, labels)
+                trainset.targets = labels
+                trainset.data = images
+                trainset.nclass = args.nclass
+
         if not args.test:
             synset.test_with_previous(args, val_loader, prev_loaders, logger, bench=False)
 
