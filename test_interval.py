@@ -650,7 +650,7 @@ if __name__ == '__main__':
                                            persistent_workers=True,
                                            num_workers=4) for val_dataset in val_datasets]
 
-        test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, test_resnet=False, num_val=50)
+        test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, test_resnet=False, num_val=10)
         assert False
         if args.dataset[:5] == 'cifar':
             test_data(args, train_loader, val_loader, repeat=args.repeat, model_fn=resnet10_bn)
