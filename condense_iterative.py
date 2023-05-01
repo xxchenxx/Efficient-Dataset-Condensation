@@ -529,7 +529,7 @@ def condense(args, logger, device='cuda'):
         prev_loaders = []
         if interval_idx >= 1:
             for i in range(interval_idx):
-                prev_data, prev_targets = torch.load(os.path.join(args.save_dir, f'interval_{interval_idx - 1}_data.pt'))
+                prev_data, prev_targets = torch.load(os.path.join(args.save_dir, f'interval_{i}_data.pt'))
                 synset_old = Synthesizer(args, nclass, nch, hs, ws)
                 synset_old.init(loader_real, init_type=args.init)
                 with torch.no_grad():
@@ -543,8 +543,8 @@ def condense(args, logger, device='cuda'):
                 for idx in range(10):
                     model = define_model(args, nclass).to(device)
                     model.train()
-                    for i in range(interval_idx):
-                        prev_loader = prev_loaders[i]
+                    for j in range(interval_idx):
+                        prev_loader = prev_loaders[j]
                         best_acc1, acc1, return_weights = train_only(args, model, prev_loader, True, logger=logger)
                         model.load_state_dict(return_weights)
                     loader_acc_evaluate = ClassDataLoader(trainset,
@@ -672,9 +672,15 @@ def condense(args, logger, device='cuda'):
 
                 # It is okay to clamp data to [0, 1] at here.
                 # synset.data.data = torch.clamp(synset.data.data, min=0., max=1.)
-                torch.save(
-                    [synset.data.detach().cpu(), synset.targets.cpu()],
-                    os.path.join(args.save_dir, f'interval_{interval_idx}_data.pt'))
+                if args.override_save_dir is not None:
+                    os.makedirs(args.override_save_dir, exist_ok=True)
+                    torch.save(
+                        [synset.data.detach().cpu(), synset.targets.cpu()],
+                        os.path.join(args.override_save_dir, f'interval_{interval_idx}_data.pt'))
+                else:
+                    torch.save(
+                        [synset.data.detach().cpu(), synset.targets.cpu()],
+                        os.path.join(args.save_dir, f'interval_{interval_idx}_data.pt'))
                 print("img and data saved!")
 
                 if not args.test:
@@ -699,10 +705,17 @@ if __name__ == '__main__':
     os.makedirs(args.save_dir, exist_ok=True)
     cur_file = os.path.join(os.getcwd(), __file__)
     shutil.copy(cur_file, args.save_dir)
-
-    logger = Logger(args.save_dir)
-    logger(f"Save dir: {args.save_dir}")
-    with open(os.path.join(args.save_dir, 'args.txt'), 'w') as f:
-        json.dump(args.__dict__, f, indent=2)
+    if args.override_save_dir is None:
+        logger = Logger(args.save_dir)
+        logger(f"Save dir: {args.save_dir}")
+        with open(os.path.join(args.save_dir, 'args.txt'), 'w') as f:
+            json.dump(args.__dict__, f, indent=2)
+    else:
+        os.makedirs(args.override_save_dir, exist_ok=True)
+        logger = Logger(args.override_save_dir)
+        logger(f"Save dir: {args.override_save_dir}")
+        with open(os.path.join(args.override_save_dir, 'args.txt'), 'w') as f:
+            json.dump(args.__dict__, f, indent=2)
+    
 
     condense(args, logger)

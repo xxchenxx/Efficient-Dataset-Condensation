@@ -250,10 +250,12 @@ parser.add_argument('--same_compute',
                     help='match evaluation training steps for IDC')
 parser.add_argument('--name', type=str, default='', help='name of the test data folder')
 parser.add_argument('--start-interval', type=int, default=0)
-parser.add_argument('--difficulty-interval', type=int, default=0)
+parser.add_argument('--difficulty-interval', type=int, default=10)
 parser.add_argument('--filter-easy-to-hard', action='store_true')
 parser.add_argument('--filter-correct-samples', action='store_true')
 parser.add_argument('--filter-correct-samples-both', action='store_true')
+parser.add_argument('--override-save-dir', type=str, default=None)
+parser.add_argument('--override-load-dir', type=str, default=None)
 parser.set_defaults(bottleneck=True)
 parser.set_defaults(verbose=False)
 args = parser.parse_args()
@@ -456,3 +458,6 @@ if args.dsa:
     print("DSA strategy: ", args.dsa_strategy)
 else:
     args.augment = True
+
+if args.override_load_dir is not None:
+    args.save_dir = args.override_load_dir
