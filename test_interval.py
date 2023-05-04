@@ -627,10 +627,13 @@ if __name__ == '__main__':
     import numpy as np
     cudnn.benchmark = True
 
+
     if args.same_compute and args.factor > 1:
         args.epochs = int(args.epochs / args.factor**2)
 
     path_list = return_data_path(args)
+    if args.override_load_dir is not None:
+        path_list = [args.override_load_dir]
     for p in path_list:
         args.save_dir = os.path.join(DATA_PATH, p)
         if args.slct_type == 'herding':
