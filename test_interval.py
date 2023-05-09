@@ -641,19 +641,30 @@ if __name__ == '__main__':
             raise NotImplementedError
         else:
             train_datasets, val_datasets = load_data_path_multiple(args)
-
-        train_loaders = [MultiEpochsDataLoader(train_dataset,
-                                             batch_size=args.batch_size,
-                                             shuffle=True,
-                                             num_workers=args.workers if args.augment else 0,
-                                             persistent_workers=args.augment > 0) for train_dataset in train_datasets]
-        val_loaders = [MultiEpochsDataLoader(val_dataset,
-                                           batch_size=args.batch_size // 2,
-                                           shuffle=False,
-                                           persistent_workers=True,
-                                           num_workers=4) for val_dataset in val_datasets]
-
-        test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, test_resnet=False, num_val=10)
+        if not args.mixed_interval:
+            train_loaders = [MultiEpochsDataLoader(train_dataset,
+                                                batch_size=args.batch_size,
+                                                shuffle=True,
+                                                num_workers=args.workers if args.augment else 0,
+                                                persistent_workers=args.augment > 0) for train_dataset in train_datasets]
+            val_loaders = [MultiEpochsDataLoader(val_dataset,
+                                            batch_size=args.batch_size // 2,
+                                            shuffle=False,
+                                            persistent_workers=True,
+                                            num_workers=4) for val_dataset in val_datasets]
+        else:
+            chain_train_sets = torch.utils.data.ConcatDataset(train_datasets)
+            train_loaders = [MultiEpochsDataLoader(chain_train_sets,
+                                                batch_size=args.batch_size,
+                                                shuffle=True,
+                                                num_workers=args.workers if args.augment else 0,
+                                                persistent_workers=args.augment > 0)]
+            val_loaders = [MultiEpochsDataLoader(val_dataset,
+                                            batch_size=args.batch_size // 2,
+                                            shuffle=False,
+                                            persistent_workers=True,
+                                            num_workers=4) for val_dataset in val_datasets]
+        test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, test_resnet=False, num_val=50)
         assert False
         if args.dataset[:5] == 'cifar':
             test_data(args, train_loader, val_loader, repeat=args.repeat, model_fn=resnet10_bn)

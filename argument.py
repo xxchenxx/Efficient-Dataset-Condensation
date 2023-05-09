@@ -256,6 +256,7 @@ parser.add_argument('--filter-correct-samples', action='store_true')
 parser.add_argument('--filter-correct-samples-both', action='store_true')
 parser.add_argument('--override-save-dir', type=str, default=None)
 parser.add_argument('--override-load-dir', type=str, default=None)
+parser.add_argument('--mixed-interval', action="store_true")
 parser.set_defaults(bottleneck=True)
 parser.set_defaults(verbose=False)
 args = parser.parse_args()
@@ -301,6 +302,20 @@ if args.dataset == 'imagenet':
     if args.net_type == 'convnet':
         args.net_type = 'resnet_ap'
     args.size = 224
+    if args.nclass >= 100:
+        args.load_memory = False
+        print("args.load_memory is setted as False! (see args.argument)")
+        # We need to tune lr and weight decay
+        args.lr = 0.1
+        args.weight_decay = 1e-4
+        args.batch_size = max(128, args.batch_size)
+        args.batch_real = max(128, args.batch_real)
+
+if args.dataset == 'tiny-imagenet':
+    if args.net_type == 'convnet':
+        args.net_type = 'resnet_ap'
+    args.size = 64
+    args.nclass = 200
     if args.nclass >= 100:
         args.load_memory = False
         print("args.load_memory is setted as False! (see args.argument)")
