@@ -30,7 +30,7 @@ def return_data_path(args):
         name = args.name
         if name == '':
             if args.dataset == 'cifar10':
-                name = f'cifar10/conv3in_hard_20_grad_mse_nd2000_cut_niter2000_factor{args.factor}_lr0.005_{init}'
+                name = f'cifar10/conv3in_grad_mse_nd2000_cut_niter2000_factor{args.factor}_lr0.005_{init}'
 
             elif args.dataset == 'cifar100':
                 name = f'cifar100/conv3in_grad_mse_nd2000_cut_niter2000_factor{args.factor}_lr0.005_{init}'
