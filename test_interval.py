@@ -619,6 +619,7 @@ def test_data_with_previous(args,
         best_accs_repeat = np.stack(best_accs_repeat)
         logger(
             f' => Best, last acc: {np.round(np.mean(best_accs_repeat, 0), 4)} {np.mean(acc_l):.1f}\n')
+        print(np.std(best_accs_repeat))
 
 
 if __name__ == '__main__':
