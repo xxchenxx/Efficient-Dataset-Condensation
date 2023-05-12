@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torchvision import datasets, transforms
-from data import transform_imagenet, transform_cifar, transform_svhn, transform_mnist, transform_fashion
+from data import transform_imagenet, transform_cifar, transform_svhn, transform_mnist, transform_fashion, transform_tiny_imagenet
 from data import TensorDataset, ImageFolder, save_img
 from data import ClassDataLoader, ClassMemDataLoader, MultiEpochsDataLoader
 from data import MEANS, STDS
@@ -198,6 +198,13 @@ class Synthesizer():
                                                     size=0,
                                                     rrc=args.rrc,
                                                     rrc_size=self.size[0])
+        elif args.dataset == 'tiny-imagenet':
+            train_transform, _ = transform_tiny_imagenet(
+                augment=augment,
+                from_tensor=True,
+                size=0,
+                rrc=args.rrc,
+                rrc_size=self.size[0])
         elif args.dataset[:5] == 'cifar':
             train_transform, _ = transform_cifar(augment=augment, from_tensor=True)
         elif args.dataset == 'svhn':
@@ -305,7 +312,38 @@ def load_resized_data(args):
 
         val_dataset = datasets.FashionMNIST(args.data_dir, train=False, transform=transform_test)
         train_dataset.nclass = 10
+    elif args.dataset == 'tiny-imagenet':
+        traindir = os.path.join(args.imagenet_dir, 'train')
+        valdir = os.path.join(args.imagenet_dir, 'val')
+        print(traindir)
+        # We preprocess images to the fixed size (default: 224)
+        resize = transforms.Compose([
+            transforms.Resize(64),
+            transforms.CenterCrop(64),
+            transforms.PILToTensor()
+        ])
 
+        if args.load_memory:  # uint8
+            transform = None
+            load_transform = resize
+        else:
+            transform = transforms.Compose([resize, transforms.ConvertImageDtype(torch.float)])
+            load_transform = None
+
+        _, test_transform = transform_tiny_imagenet(size=64)
+        train_dataset = ImageFolder(traindir,
+                                    transform=transform,
+                                    nclass=args.nclass,
+                                    phase=args.phase,
+                                    seed=args.dseed,
+                                    load_memory=args.load_memory,
+                                    load_transform=load_transform)
+        val_dataset = ImageFolder(valdir,
+                                  test_transform,
+                                  nclass=args.nclass,
+                                  phase=args.phase,
+                                  seed=args.dseed,
+                                  load_memory=False)
     elif args.dataset == 'imagenet':
         traindir = os.path.join(args.imagenet_dir, 'train')
         valdir = os.path.join(args.imagenet_dir, 'val')

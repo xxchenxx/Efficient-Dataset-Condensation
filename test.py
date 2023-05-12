@@ -470,7 +470,7 @@ if __name__ == '__main__':
         test_data(args, train_loader, val_loader, repeat=args.repeat, test_resnet=False, num_val=50)
         assert False
         if args.dataset[:5] == 'cifar':
-            test_data(args, train_loader, val_loader, repeat=args.repeat, model_fn=resnet10_bn)
+            test_data(args, train_loader, val_loader, repeat=args.repeat, model_fn=resnet10_bn, num_val=50)
             if (not args.same_compute) and (args.ipc >= 50 and args.factor > 1):
                 args.epochs = 400
             test_data(args, train_loader, val_loader, repeat=args.repeat, model_fn=densenet)
