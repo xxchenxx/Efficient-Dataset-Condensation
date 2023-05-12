@@ -602,11 +602,13 @@ def test_data_with_previous(args,
             interval_idx = 0
             best_accs = []
             model = model_fn(args, args.nclass, logger=logger)
+            old_lr = args.lr
             for previous_train_loader in previous_train_loaders:
                 best_acc, acc = train(args, model, previous_train_loader, val_loader, logger=print)
                 best_accs.append(best_acc)
                 torch.save(model.state_dict(), f'model_interval_{interval_idx}_repeat{_}.pth.tar')
                 interval_idx += 1
+                args.lr = old_lr / 2
             best_acc, acc = train(args, model, train_loader, val_loader, logger=print)
             best_acc_l.append(best_acc)
             best_accs.append(best_acc)
