@@ -619,7 +619,7 @@ def test_data_with_previous(args,
         best_accs_repeat = np.stack(best_accs_repeat)
         logger(
             f' => Best, last acc: {np.round(np.mean(best_accs_repeat, 0), 4)} {np.mean(acc_l):.1f}\n')
-        print(np.std(best_accs_repeat))
+        print(np.std(best_accs_repeat, 0))
 
 
 if __name__ == '__main__':
@@ -668,10 +668,10 @@ if __name__ == '__main__':
         test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, test_resnet=False, num_val=50)
         assert False
         if args.dataset[:5] == 'cifar':
-            test_data(args, train_loader, val_loader, repeat=args.repeat, model_fn=resnet10_bn)
+            test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=resnet10_bn, num_val=50)
             if (not args.same_compute) and (args.ipc >= 50 and args.factor > 1):
                 args.epochs = 400
-            test_data(args, train_loader, val_loader, repeat=args.repeat, model_fn=densenet)
+            # test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=densenet, num_val=50)
         elif args.dataset == 'imagenet':
-            test_data(args, train_loader, val_loader, repeat=args.repeat, model_fn=resnet18_bn)
-            test_data(args, train_loader, val_loader, repeat=args.repeat, model_fn=efficientnet)
+            test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=resnet18_bn)
+            test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=efficientnet)
