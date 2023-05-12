@@ -25,7 +25,8 @@ MEANS['mnist'] = [0.1307]
 STDS['mnist'] = [0.3081]
 MEANS['fashion'] = [0.2861]
 STDS['fashion'] = [0.3530]
-
+MEANS['tiny-imagenet'] = [0.4802, 0.4481, 0.3975]
+STDS['tiny-imagenet']= [0.2302, 0.2265, 0.2262]
 
 class TensorDataset(torch.utils.data.Dataset):
     def __init__(self, images, labels, transform=None):
@@ -109,7 +110,6 @@ class ImageFolder(datasets.DatasetFolder):
             class_indices = np.random.permutation(len(self.classes))[cls_from:cls_to]
             for i in class_indices:
                 classes.append(self.classes[i])
-
         class_to_idx = {cls_name: i for i, cls_name in enumerate(classes)}
         assert len(classes) == nclass
 
@@ -323,6 +323,63 @@ def transform_imagenet(size=-1,
 
     return train_transform, test_transform
 
+
+def transform_tiny_imagenet(size=-1,
+                       augment=False,
+                       from_tensor=False,
+                       normalize=True,
+                       rrc=True,
+                       rrc_size=-1):
+
+    if size > 0:
+        resize_train = [transforms.Resize(size), transforms.CenterCrop(size)]
+        resize_test = [transforms.Resize(size), transforms.CenterCrop(size)]
+        # print(f"Resize and crop training images to {size}")
+    elif size == 0:
+        resize_train = []
+        resize_test = []
+        assert rrc_size > 0, "Set RRC size!"
+    else:
+        resize_train = [transforms.RandomCrop(64, padding=4)]
+        resize_test = []
+
+    if not augment:
+        aug = []
+        # print("Loader with DSA augmentation")
+    else:
+        jittering = utils.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4)
+        lighting = utils.Lighting(alphastd=0.1,
+                                  eigval=[0.2175, 0.0188, 0.0045],
+                                  eigvec=[
+                                      [-0.5675, 0.7192, 0.4009],
+                                      [-0.5808, -0.0045, -0.8140],
+                                      [-0.5836, -0.6948, 0.4203],
+                                  ])
+        aug = [transforms.RandomHorizontalFlip(), jittering, lighting]
+
+        if rrc and size >= 0:
+            if rrc_size == -1:
+                rrc_size = size
+            rrc_fn = transforms.RandomResizedCrop(rrc_size, scale=(0.5, 1.0))
+            aug = [rrc_fn] + aug
+            print("Dataset with basic imagenet augmentation and RRC")
+        else:
+            print("Dataset with basic imagenet augmentation")
+
+    if from_tensor:
+        cast = []
+    else:
+        cast = [transforms.ToTensor()]
+
+    if normalize:
+        normal_fn = [transforms.Normalize(mean=[0.4802, 0.4481, 0.3975], std=[0.2302, 0.2265, 0.2262])]
+    else:
+        normal_fn = []
+
+    train_transform = transforms.Compose(resize_train + cast + aug + normal_fn)
+    test_transform = transforms.Compose(resize_test + cast + normal_fn)
+
+    return train_transform, test_transform
 
 class _RepeatSampler(object):
     """ Sampler that repeats forever.
