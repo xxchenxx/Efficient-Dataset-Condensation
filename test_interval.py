@@ -603,10 +603,11 @@ def test_data_with_previous(args,
             best_accs = []
             model = model_fn(args, args.nclass, logger=logger)
             for previous_train_loader in previous_train_loaders:
-                best_acc, acc = train(args, model, previous_train_loader, val_loader, logger=print)
+                best_acc, acc, best_weights = train(args, model, previous_train_loader, val_loader, logger=print, return_weight=True)
                 best_accs.append(best_acc)
                 torch.save(model.state_dict(), f'model_interval_{interval_idx}_repeat{_}.pth.tar')
                 interval_idx += 1
+
             best_acc, acc = train(args, model, train_loader, val_loader, logger=print)
             best_acc_l.append(best_acc)
             best_accs.append(best_acc)
@@ -654,7 +655,7 @@ if __name__ == '__main__':
                                            persistent_workers=True,
                                            num_workers=4) for val_dataset in val_datasets]
 
-        test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, test_resnet=False, num_val=10)
+        test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, test_resnet=False, num_val=50)
         assert False
         if args.dataset[:5] == 'cifar':
             test_data(args, train_loader, val_loader, repeat=args.repeat, model_fn=resnet10_bn)

@@ -99,7 +99,7 @@ def main(args, logger, repeat=1):
     logger(f'\n(Repeat {repeat}) Best, last acc: {np.mean(best_acc_l):.1f} {np.mean(acc_l):.1f}')
 
 
-def train(args, model, train_loader, val_loader, plotter=None, logger=None):
+def train(args, model, train_loader, val_loader, plotter=None, logger=None, return_weight=False):
     criterion = nn.CrossEntropyLoss().cuda()
     optimizer = optim.SGD(model.parameters(),
                           args.lr,
@@ -148,6 +148,7 @@ def train(args, model, train_loader, val_loader, plotter=None, logger=None):
             if is_best:
                 best_acc1 = acc1
                 best_acc5 = acc5
+                best_state_dict = model.state_dict()
                 # if logger != None:
                 #     logger(f'Best accuracy (top-1 and 5): {best_acc1:.1f} {best_acc5:.1f}')
 
@@ -163,7 +164,10 @@ def train(args, model, train_loader, val_loader, plotter=None, logger=None):
             save_checkpoint(args.save_dir, state, is_best)
         scheduler.step()
 
-    return best_acc1, acc1
+    if not return_weight:
+        return best_acc1, acc1
+    else:
+        return best_acc1, acc1, best_state_dict
 
 def train_only(args, model, train_loader, return_weights=False, logger=None):
     criterion = nn.CrossEntropyLoss().cuda()
