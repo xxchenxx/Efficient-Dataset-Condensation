@@ -560,8 +560,11 @@ def condense(args, logger, device='cuda'):
         if previous_images is not None:
             previous_images = previous_images.to(synset.data.data.device)
             previous_labels = previous_labels.to(synset.targets.data.device)
+            masked_num = previous_images.shape[0]
             synset.data.data = torch.cat([previous_images, synset.data.data])
             synset.targets.data = torch.cat([previous_labels, synset.targets.data])
+        else:
+            masked_num = 0
         save_img(os.path.join(args.save_dir, f'interval_{interval_idx}_init.png'),
                 synset.data,
                 unnormalize=False,
@@ -577,14 +580,15 @@ def condense(args, logger, device='cuda'):
         
         prev_loaders = []
         if interval_idx >= 1:
-            prev_data, prev_targets = torch.load(os.path.join(args.save_dir, f'interval_{interval_idx - 1}_data.pt'))
-            synset_old = Synthesizer(args, nclass, nch, hs, ws)
-            synset_old.init(loader_real, init_type=args.init)
-            with torch.no_grad():
-                synset_old.data.copy_(prev_data)
-                synset_old.targets.copy_(prev_targets)
-            prev_loader = synset_old.loader(args, args.augment)
-            prev_loaders.append(prev_loader)
+            for i in range(interval_idx):
+                prev_data, prev_targets = torch.load(os.path.join(args.save_dir, f'interval_{i}_data.pt'))
+                synset_old = Synthesizer(args, nclass, nch, hs, ws)
+                synset_old.init(loader_real, init_type=args.init)
+                with torch.no_grad():
+                    synset_old.data.copy_(prev_data)
+                    synset_old.targets.copy_(prev_targets)
+                prev_loader = synset_old.loader(args, args.augment)
+                prev_loaders.append(prev_loader)
         
             if args.filter_correct_samples or args.filter_correct_samples_both:
                 correct = torch.zeros(len(trainset)).cuda()
@@ -628,7 +632,7 @@ def condense(args, logger, device='cuda'):
                 trainset.nclass = args.nclass
 
         if not args.test:
-            synset.test(args, val_loader, logger, bench=False)
+            synset.test_with_previous(args, val_loader, prev_loaders, logger, bench=False)
 
         # Data distillation
         optim_img = torch.optim.SGD(synset.parameters(), lr=args.lr_img, momentum=args.mom_img)
@@ -690,6 +694,7 @@ def condense(args, logger, device='cuda'):
 
                     optim_img.zero_grad()
                     loss.backward()
+                    synset.data.grad.data[:masked_num] = 0
                     optim_img.step()
                     ts.stamp("backward")
 
@@ -735,7 +740,7 @@ def condense(args, logger, device='cuda'):
                 print("img and data saved!")
 
                 if not args.test:
-                    synset.test(args, val_loader, logger)
+                    synset.test_with_previous(args, val_loader, prev_loaders, logger, bench=False)
 
 
 if __name__ == '__main__':
