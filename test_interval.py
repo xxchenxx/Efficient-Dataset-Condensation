@@ -608,7 +608,8 @@ def test_data_with_previous(args,
                 best_accs.append(best_acc)
                 torch.save(model.state_dict(), f'model_interval_{interval_idx}_repeat{_}.pth.tar')
                 interval_idx += 1
-                args.lr = old_lr / 2
+
+                args.lr = old_lr / (1 + interval_idx)
             best_acc, acc = train(args, model, train_loader, val_loader, logger=print)
             best_acc_l.append(best_acc)
             best_accs.append(best_acc)
