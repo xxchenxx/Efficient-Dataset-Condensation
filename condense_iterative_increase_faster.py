@@ -636,7 +636,8 @@ def condense(args, logger, device='cuda'):
         ts = utils.TimeStamp(args.time)
         n_iter = args.niter * 100 // args.inner_loop
         it_log = max(n_iter // 50, 1)
-        it_test = [n_iter // 10, n_iter // 5, n_iter // 4, n_iter // 3, n_iter // 2, n_iter // 3 * 2, n_iter // 4 * 3, n_iter]
+        it_test = np.arange(0, n_iter, 50)
+        # [n_iter // 10, n_iter // 5, n_iter // 4, n_iter // 3, n_iter // 2, n_iter // 3 * 2, n_iter // 4 * 3, n_iter]
 
         logger(f"\nStart condensing with {args.match} matching for {n_iter} iteration")
         args.fix_iter = max(1, args.fix_iter)
