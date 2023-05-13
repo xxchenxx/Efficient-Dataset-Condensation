@@ -560,11 +560,25 @@ def condense(args, logger, device='cuda'):
         if previous_images is not None:
             previous_images = previous_images.to(synset.data.data.device)
             previous_labels = previous_labels.to(synset.targets.data.device)
-            masked_num = previous_images.shape[0]
-            synset.data.data = torch.cat([previous_images, synset.data.data])
-            synset.targets.data = torch.cat([previous_labels, synset.targets.data])
+            with torch.no_grad():
+                new_data = torch.stack([previous_images, synset.data], 1)
+                new_targets = torch.stack([previous_labels, synset.targets], 1)
+                grad_mask = torch.stack([torch.zeros_like(previous_images), torch.ones_like(synset.data)], 1).reshape(-1, *new_data.shape[2:])
+                new_data = new_data.reshape(-1, *new_data.shape[2:])
+                
+                new_targets = new_targets.reshape(-1)
+                synset.data = torch.tensor(new_data,
+                                dtype=torch.float,
+                                requires_grad=True,
+                                device=synset.device)
+                synset.targets = torch.tensor(new_targets,
+                                dtype=torch.long,
+                                requires_grad=False,
+                                device=synset.device)
+                synset.ipc = synset.data.shape[0] // nclass
+                print(synset.ipc)
         else:
-            masked_num = 0
+            grad_mask = None
         save_img(os.path.join(args.save_dir, f'interval_{interval_idx}_init.png'),
                 synset.data,
                 unnormalize=False,
@@ -635,6 +649,8 @@ def condense(args, logger, device='cuda'):
             synset.test_with_previous(args, val_loader, prev_loaders, logger, bench=False)
 
         # Data distillation
+        print(synset.parameters())
+
         optim_img = torch.optim.SGD(synset.parameters(), lr=args.lr_img, momentum=args.mom_img)
 
         ts = utils.TimeStamp(args.time)
@@ -694,7 +710,9 @@ def condense(args, logger, device='cuda'):
 
                     optim_img.zero_grad()
                     loss.backward()
-                    synset.data.grad.data[:masked_num] = 0
+                    if grad_mask is not None:
+                        synset.data.grad.data.mul_(grad_mask)
+
                     optim_img.step()
                     ts.stamp("backward")
 
