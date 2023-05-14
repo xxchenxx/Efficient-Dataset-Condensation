@@ -561,8 +561,9 @@ def condense(args, logger, device='cuda'):
             previous_images = previous_images.to(synset.data.data.device)
             previous_labels = previous_labels.to(synset.targets.data.device)
             with torch.no_grad():
-                new_data = torch.stack([previous_images, synset.data], 1)
-                new_targets = torch.stack([previous_labels, synset.targets], 1)
+                previous_images = previous_images.reshape(synset.data.shape[0], -1, *synset.data.shape[1:])
+                new_data = torch.cat([previous_images, synset.data.unsqueeze(1)], 1)
+                new_targets = torch.cat([previous_labels.reshape(synset.targets.shape[0], -1), synset.targets.unsqueeze(1)], 1)
                 grad_mask = torch.stack([torch.zeros_like(previous_images), torch.ones_like(synset.data)], 1).reshape(-1, *new_data.shape[2:])
                 new_data = new_data.reshape(-1, *new_data.shape[2:])
                 
