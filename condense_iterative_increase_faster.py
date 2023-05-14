@@ -564,7 +564,7 @@ def condense(args, logger, device='cuda'):
                 previous_images = previous_images.reshape(synset.data.shape[0], -1, *synset.data.shape[1:])
                 new_data = torch.cat([previous_images, synset.data.unsqueeze(1)], 1)
                 new_targets = torch.cat([previous_labels.reshape(synset.targets.shape[0], -1), synset.targets.unsqueeze(1)], 1)
-                grad_mask = torch.stack([torch.zeros_like(previous_images), torch.ones_like(synset.data)], 1).reshape(-1, *new_data.shape[2:])
+                grad_mask = torch.cat([torch.zeros_like(previous_images), torch.ones_like(synset.data).unsqueeze(1)], 1).reshape(-1, *new_data.shape[2:])
                 new_data = new_data.reshape(-1, *new_data.shape[2:])
                 
                 new_targets = new_targets.reshape(-1)
@@ -597,6 +597,9 @@ def condense(args, logger, device='cuda'):
         if interval_idx >= 1:
             for i in range(interval_idx):
                 prev_data, prev_targets = torch.load(os.path.join(args.save_dir, f'interval_{i}_data.pt'))
+                old_ipc = int(args.ipc)
+                new_ipc = old_ipc * (i + 1)
+                args.ipc = new_ipc
                 synset_old = Synthesizer(args, nclass, nch, hs, ws)
                 synset_old.init(loader_real, init_type=args.init)
                 with torch.no_grad():
@@ -604,7 +607,8 @@ def condense(args, logger, device='cuda'):
                     synset_old.targets.copy_(prev_targets)
                 prev_loader = synset_old.loader(args, args.augment)
                 prev_loaders.append(prev_loader)
-        
+                args.ipc = old_ipc
+                print(args.ipc)
             if args.filter_correct_samples or args.filter_correct_samples_both:
                 correct = torch.zeros(len(trainset)).cuda()
                 for idx in range(10):
