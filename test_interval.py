@@ -280,6 +280,11 @@ def load_data_path(args):
         # Load condensed dataset
         if 'idc' in args.slct_type:
             data, target = torch.load(os.path.join(f'{args.save_dir}', 'data.pt'))
+
+            data = data.reshape(100, -1, *data.shape[2:])
+            target = data.reshape(100, -1)
+            data = data[:, -1]
+            target = target[:, -1]
             print("Load condensed data ", args.save_dir, data.shape)
             # This does not make difference to the performance
             # data = torch.clamp(data, min=0., max=1.)
@@ -611,8 +616,8 @@ def test_data_with_previous(args,
                 best_accs.append(best_acc)
                 torch.save(model.state_dict(), f'model_interval_{interval_idx}_repeat{_}.pth.tar')
                 interval_idx += 1
-                if args.net_type == 'convnet':
-                    args.lr = old_lr / count
+                # if args.net_type == 'convnet':
+                #     args.lr = old_lr / count
             best_acc, acc = train(args, model, train_loader, val_loader, logger=print)
             best_acc_l.append(best_acc)
             best_accs.append(best_acc)
@@ -671,6 +676,7 @@ if __name__ == '__main__':
                                             shuffle=False,
                                             persistent_workers=True,
                                             num_workers=4) for val_dataset in val_datasets]
+        # train_loaders = train_loaders[:-1]
         test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, test_resnet=False, num_val=10)
         if args.dataset[:5] == 'cifar':
             # test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=resnet10_bn, num_val=50)
