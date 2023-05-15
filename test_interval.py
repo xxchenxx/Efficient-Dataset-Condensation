@@ -280,11 +280,6 @@ def load_data_path(args):
         # Load condensed dataset
         if 'idc' in args.slct_type:
             data, target = torch.load(os.path.join(f'{args.save_dir}', 'data.pt'))
-
-            data = data.reshape(100, -1, *data.shape[2:])
-            target = data.reshape(100, -1)
-            data = data[:, -1]
-            target = target[:, -1]
             print("Load condensed data ", args.save_dir, data.shape)
             # This does not make difference to the performance
             # data = torch.clamp(data, min=0., max=1.)
@@ -450,6 +445,13 @@ def load_data_path_multiple(args):
                 # Load condensed dataset
                 if 'idc' in args.slct_type:
                     data, target = torch.load(os.path.join(f'{args.save_dir}', f'interval_{idx}_data.pt'))
+
+                    if args.new_only:
+                        data = data.reshape(args.nclass * args.ipc, -1, *data.shape[1:])
+                        target = target.reshape(args.nclass * args.ipc, -1)
+                        data = data[:, -1]
+                        target = target[:, -1]
+
                     print("Load condensed data ", args.save_dir, data.shape)
                     # This does not make difference to the performance
                     # data = torch.clamp(data, min=0., max=1.)
@@ -676,7 +678,8 @@ if __name__ == '__main__':
                                             shuffle=False,
                                             persistent_workers=True,
                                             num_workers=4) for val_dataset in val_datasets]
-        # train_loaders = train_loaders[:-1]
+        if args.last_only:
+            train_loaders = train_loaders[-1:]
         test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, test_resnet=False, num_val=10)
         if args.dataset[:5] == 'cifar':
             # test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=resnet10_bn, num_val=50)
