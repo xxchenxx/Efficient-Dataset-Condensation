@@ -582,7 +582,7 @@ class ClassPartMemDataLoader(MultiEpochsDataLoader):
         self.class_sampler = ClassBatchSampler([self.cls_idx[c] for c in subclass_list],
                                                class_batch_size,
                                                drop_last=True)
-        self.cls_targets = torch.tensor([np.ones(class_batch_size) * c for c in range(self.nclass)],
+        self.cls_targets = torch.tensor([np.ones(class_batch_size, dtype=int) * c for c in range(self.nclass)],
                                         dtype=torch.long,
                                         requires_grad=False,
                                         device='cuda')

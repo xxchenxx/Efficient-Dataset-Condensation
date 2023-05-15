@@ -37,7 +37,7 @@ class Synthesizer():
                                 device=self.device)
         self.data.data = torch.clamp(self.data.data / 4 + 0.5, min=0., max=1.)
         self.targets = torch.tensor(
-            [np.ones(self.ipc) * self.subclass_list[c] for c in range(nclass_sub)],
+            [np.ones(self.ipc, dtype=int) * self.subclass_list[c] for c in range(nclass_sub)],
             dtype=torch.long,
             requires_grad=False,
             device=self.device).view(-1)
@@ -48,10 +48,6 @@ class Synthesizer():
         self.decode_type = args.decode_type
         self.resize = nn.Upsample(size=self.size, mode='bilinear')
         print("Factor: ", self.factor)
-
-        self.cls_idx = [[] for _ in range(self.nclass)]
-        for i in range(self.data.shape[0]):
-            self.cls_idx[self.targets[i]].append(i)
 
         print("\nDefine synthetic data: ", self.data.shape)
 
@@ -696,11 +692,10 @@ def condense(args, logger, device='cuda'):
                 ts.set()
 
                 # Update synset
-                for c in range(nclass):
+                for c in subclass_list:
                     img, lab = loader_real.class_sample(c)
-                    img_syn, lab_syn = synset.sample(c, max_size=args.batch_syn_max)
+                    img_syn, lab_syn = synset.sample(real_to_idx[c], max_size=args.batch_syn_max)
                     ts.stamp("data")
-
                     n = img.shape[0]
                     img_aug = aug(torch.cat([img, img_syn]))
                     ts.stamp("aug")
