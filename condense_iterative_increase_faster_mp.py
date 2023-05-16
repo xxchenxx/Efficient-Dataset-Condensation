@@ -593,7 +593,7 @@ def condense(args, logger, device='cuda'):
                 old_ipc = int(args.ipc)
                 new_ipc = old_ipc * (i + 1)
                 args.ipc = new_ipc
-                synset_old = Synthesizer(args, nclass, nch, hs, ws)
+                synset_old = Synthesizer(args, args.nclass_sub, subclass_list, nch, hs, ws)
                 synset_old.init(loader_real, init_type=args.init)
                 with torch.no_grad():
                     synset_old.data.copy_(prev_data)
