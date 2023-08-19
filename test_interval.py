@@ -641,7 +641,6 @@ if __name__ == '__main__':
     import numpy as np
     cudnn.benchmark = True
 
-
     if args.same_compute and args.factor > 1:
         args.epochs = int(args.epochs / args.factor**2)
 
@@ -680,10 +679,11 @@ if __name__ == '__main__':
                                             num_workers=4) for val_dataset in val_datasets]
         if args.last_only:
             train_loaders = train_loaders[-1:]
-        test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, test_resnet=False, num_val=10)
+        print(len(train_loaders))
+        # test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, test_resnet=False, num_val=50)
         if args.dataset[:5] == 'cifar':
             # test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=resnet10_bn, num_val=50)
-            # test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=resnet18_bn, num_val=50)
+            test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=resnet18_bn, num_val=50)
             assert False
 
             if (not args.same_compute) and (args.ipc >= 50 and args.factor > 1):
