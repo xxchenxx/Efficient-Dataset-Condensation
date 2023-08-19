@@ -680,7 +680,8 @@ if __name__ == '__main__':
                                             num_workers=4) for val_dataset in val_datasets]
         if args.last_only:
             train_loaders = train_loaders[-1:]
-        test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, test_resnet=False, num_val=10)
+        # args.epochs = 333
+        test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, test_resnet=False, num_val=20)
         if args.dataset[:5] == 'cifar':
             # test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=resnet10_bn, num_val=50)
             # test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=resnet18_bn, num_val=50)
