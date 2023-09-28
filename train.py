@@ -99,14 +99,15 @@ def main(args, logger, repeat=1):
     logger(f'\n(Repeat {repeat}) Best, last acc: {np.mean(best_acc_l):.1f} {np.mean(acc_l):.1f}')
 
 
-def train(args, model, train_loader, val_loader, plotter=None, logger=None, return_weight=False, optimizer_state_dict=None):
+def train(args, model, train_loader, val_loader, plotter=None, logger=None, return_weight=False, optimizer_state=None):
     criterion = nn.CrossEntropyLoss().cuda()
     optimizer = optim.SGD(model.parameters(),
                           args.lr,
                           momentum=args.momentum,
                           weight_decay=args.weight_decay)
-    if optimizer_state_dict is not None:
-        optimizer.load_state_dict(optimizer_state_dict)
+    # print(optimizer_state)
+    if optimizer_state is not None:
+        optimizer.state = optimizer_state
     scheduler = optim.lr_scheduler.MultiStepLR(
         optimizer, milestones=[2 * args.epochs // 3, 5 * args.epochs // 6], gamma=0.2)
 
@@ -168,7 +169,7 @@ def train(args, model, train_loader, val_loader, plotter=None, logger=None, retu
     if not return_weight:
         return best_acc1, acc1
     else:
-        return best_acc1, acc1, best_state_dict, optimizer.state_dict()
+        return best_acc1, acc1, best_state_dict, optimizer.state
 
 def train_only(args, model, train_loader, return_weights=False, logger=None, epochs=None):
     criterion = nn.CrossEntropyLoss().cuda()

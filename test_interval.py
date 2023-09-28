@@ -449,6 +449,7 @@ def load_data_path_multiple(args):
                     if args.new_only:
                         data = data.reshape(args.nclass * args.ipc, -1, *data.shape[1:])
                         target = target.reshape(args.nclass * args.ipc, -1)
+                        print(data.shape)
                         data = data[:, -1]
                         target = target[:, -1]
 
@@ -611,16 +612,18 @@ def test_data_with_previous(args,
             model = model_fn(args, args.nclass, logger=logger)
             old_lr = args.lr
             count = 0
-            optimizer_state_dict = None
+            optimizer_state = None
             for previous_train_loader in previous_train_loaders:
                 count += 1
-                best_acc, acc, best_weights, optimizer_state_dict = train(args, model, previous_train_loader, val_loader, logger=print, return_weight=True)
+                if count >= 6 :
+                    args.lr = old_lr / 2
+                best_acc, acc, best_weights, optimizer_state = train(args, model, previous_train_loader, val_loader, logger=print, return_weight=True, optimizer_state=optimizer_state)
                 best_accs.append(best_acc)
                 torch.save(model.state_dict(), f'model_interval_{interval_idx}_repeat{_}.pth.tar')
                 interval_idx += 1
                 # if args.net_type == 'convnet':
                 #     args.lr = old_lr / count
-            best_acc, acc = train(args, model, train_loader, val_loader, logger=print)
+            best_acc, acc = train(args, model, train_loader, val_loader, logger=print, optimizer_state=optimizer_state)
             best_acc_l.append(best_acc)
             best_accs.append(best_acc)
             best_accs = np.array(best_accs)
@@ -679,8 +682,13 @@ if __name__ == '__main__':
                                             num_workers=4) for val_dataset in val_datasets]
         if args.last_only:
             train_loaders = train_loaders[-1:]
-        print(len(train_loaders))
-        # test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, test_resnet=False, num_val=50)
+            args.epochs = 1000
+        # args.epochs = 666
+        elif args.new_only:
+            args.epochs = 1000
+        else:
+            args.epochs = 500
+        # test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, test_resnet=False, num_val=20)
         if args.dataset[:5] == 'cifar':
             # test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=resnet10_bn, num_val=50)
             test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=resnet18_bn, num_val=50)
