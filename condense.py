@@ -494,7 +494,8 @@ def condense(args, logger, device='cuda'):
 
     logger(f"\nStart condensing with {args.match} matching for {n_iter} iteration")
     args.fix_iter = max(1, args.fix_iter)
-    for it in range(n_iter):
+    from tqdm import tqdm
+    for it in tqdm(range(n_iter)):
         if it % args.fix_iter == 0:
             model = define_model(args, nclass).to(device)
             model.train()
@@ -518,7 +519,7 @@ def condense(args, logger, device='cuda'):
 
         loss_total = 0
         synset.data.data = torch.clamp(synset.data.data, min=0., max=1.)
-        for ot in range(args.inner_loop):
+        for ot in tqdm(range(args.inner_loop)):
             ts.set()
 
             # Update synset

@@ -185,13 +185,13 @@ class Synthesizer():
 
         return data, target
 
-    def sample(self, c, max_size=128):
+    def sample(self, c, max_size=128, offset=0):
         """Sample synthetic data per class
         """
-        idx_from = self.ipc * c
-        idx_to = self.ipc * (c + 1)
-        data = self.data[idx_from:idx_to]
-        target = self.targets[idx_from:idx_to]
+        # idx_from = self.ipc * c
+        # idx_to = self.ipc * (c + 1)
+        data = self.data[self.targets == c]
+        target = self.targets[self.targets == c]
 
         data, target = self.decode(data, target, bound=max_size)
         data, target = self.subsample(data, target, max_size=max_size)
@@ -554,12 +554,10 @@ def condense(args, logger, device='cuda'):
             previous_images = previous_images.to(synset.data.data.device)
             previous_labels = previous_labels.to(synset.targets.data.device)
             with torch.no_grad():
-                previous_images = previous_images.reshape(synset.data.shape[0], -1, *synset.data.shape[1:])
-                new_data = torch.cat([previous_images, synset.data.unsqueeze(1)], 1)
-                new_targets = torch.cat([previous_labels.reshape(synset.targets.shape[0], -1), synset.targets.unsqueeze(1)], 1)
-                grad_mask = torch.cat([torch.zeros_like(previous_images), torch.ones_like(synset.data).unsqueeze(1)], 1).reshape(-1, *new_data.shape[2:])
-                new_data = new_data.reshape(-1, *new_data.shape[2:])
-                
+                new_data = torch.cat([previous_images, synset.data], 0)
+                new_targets = torch.cat([previous_labels, synset.targets], 0)
+                grad_mask = torch.cat([torch.zeros_like(previous_images), torch.ones_like(synset.data)], 0)
+
                 new_targets = new_targets.reshape(-1)
                 synset.data = torch.tensor(new_data,
                                 dtype=torch.float,
@@ -573,6 +571,7 @@ def condense(args, logger, device='cuda'):
                 print(synset.ipc)
         else:
             grad_mask = None
+
         save_img(os.path.join(args.save_dir, f'interval_{interval_idx}_init.png'),
                 synset.data,
                 unnormalize=False,
@@ -580,10 +579,10 @@ def condense(args, logger, device='cuda'):
 
         # Define augmentation function
         aug, aug_rand = diffaug(args)
-        save_img(os.path.join(args.save_dir, f'interval_{interval_idx}_aug.png'),
-                aug(synset.sample(0, max_size=args.batch_syn_max)[0]),
-                unnormalize=True,
-                dataname=args.dataset)
+        # save_img(os.path.join(args.save_dir, f'interval_{interval_idx}_aug.png'),
+        #         aug(synset.sample(0, max_size=args.batch_syn_max)[0]),
+        #         unnormalize=True,
+        #         dataname=args.dataset)
 
         
         prev_loaders = []
@@ -593,7 +592,7 @@ def condense(args, logger, device='cuda'):
                 old_ipc = int(args.ipc)
                 new_ipc = old_ipc * (i + 1)
                 args.ipc = new_ipc
-                synset_old = Synthesizer(args, args.nclass_sub, subclass_list, nch, hs, ws)
+                synset_old = Synthesizer(args, args.nclass, list(range(args.nclass)), nch, hs, ws)
                 synset_old.init(loader_real, init_type=args.init)
                 with torch.no_grad():
                     synset_old.data.copy_(prev_data)
@@ -642,10 +641,7 @@ def condense(args, logger, device='cuda'):
                 trainset.data = images
                 trainset.nclass = args.nclass
 
-        if not args.test:
-            synset.test_with_previous(args, val_loader, prev_loaders, logger, bench=False)
 
-        # Data distillation
         print(synset.parameters())
 
         optim_img = torch.optim.SGD(synset.parameters(), lr=args.lr_img, momentum=args.mom_img)
@@ -653,7 +649,7 @@ def condense(args, logger, device='cuda'):
         ts = utils.TimeStamp(args.time)
         n_iter = args.niter * 100 // args.inner_loop
         it_log = max(n_iter // 50, 1)
-        it_test = np.arange(0, n_iter, 50)
+        it_test = np.arange(0, n_iter, 50)[1:]
         # [n_iter // 10, n_iter // 5, n_iter // 4, n_iter // 3, n_iter // 2, n_iter // 3 * 2, n_iter // 4 * 3, n_iter]
 
         logger(f"\nStart condensing with {args.match} matching for {n_iter} iteration")
@@ -746,11 +742,11 @@ def condense(args, logger, device='cuda'):
                     os.makedirs(args.override_save_dir, exist_ok=True)
                     torch.save(
                         [synset.data.detach().cpu(), synset.targets.cpu()],
-                        os.path.join(args.override_save_dir, f'interval_{interval_idx}_data.pt'))
+                        os.path.join(args.override_save_dir, f'interval_{interval_idx}_data_phase.pt'))
                 else:
                     torch.save(
                         [synset.data.detach().cpu(), synset.targets.cpu()],
-                        os.path.join(args.save_dir, f'interval_{interval_idx}_data.pt'))
+                        os.path.join(args.save_dir, f'interval_{interval_idx}_data_phase.pt'))
                 print("img and data saved!")
 
                 if not args.test:

@@ -688,15 +688,15 @@ if __name__ == '__main__':
             args.epochs = 1000
         else:
             args.epochs = 500
-        # test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, test_resnet=False, num_val=20)
-        if args.dataset[:5] == 'cifar':
-            # test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=resnet10_bn, num_val=50)
-            test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=resnet18_bn, num_val=50)
-            assert False
+        test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, test_resnet=False, num_val=20)
+        # if args.dataset[:5] == 'cifar':
+        #     # test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=resnet10_bn, num_val=50)
+        #     # test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=resnet18_bn, num_val=50)
+        #     # assert False
 
-            if (not args.same_compute) and (args.ipc >= 50 and args.factor > 1):
-                args.epochs = 400
-            # test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=densenet, num_val=50)
-        elif args.dataset == 'imagenet':
-            test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=resnet18_bn)
-            test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=efficientnet)
+        #     if (not args.same_compute) and (args.ipc >= 50 and args.factor > 1):
+        #         args.epochs = 400
+        #     test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=densenet, num_val=50)
+        # elif args.dataset == 'imagenet':
+        #     test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=resnet18_bn)
+        #     test_data_with_previous(args, train_loaders[-1], val_loaders[0], train_loaders[:-1], repeat=args.repeat, model_fn=efficientnet)
